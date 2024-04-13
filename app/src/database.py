@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 import os
+import logging
 ###
 # Database Configuration
 ###
@@ -14,6 +15,7 @@ DB_PWD = os.getenv("DB_PWD", "password")
 
 SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PWD}@{HOST}:{PORT}/postgres"
 
+logging.info(f"Connecting to database: postgresql://{DB_USER}:{DB_PWD[3]}@{HOST}:{PORT}/postgres")
 engine = create_engine(
     os.getenv("DB_URL", SQLALCHEMY_DATABASE_URL)
 )

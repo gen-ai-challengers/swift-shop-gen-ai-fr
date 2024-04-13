@@ -28,10 +28,16 @@ def get_application() -> FastAPI:
     
     ## Start FastApi App 
     application = FastAPI()
-    session = SessionLocal()
-    session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    session.commit()
-    session.close()
+    try:
+        logging.info("Creating extension vector")
+        session = SessionLocal()
+        logging.info("Session created")
+        session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        logging.info("Extension vector created")
+        session.commit()
+        session.close()
+    except Exception as e:
+        logging.error(f"Error creating extension: {e}")
     ## Generate database tables
     Base.metadata.create_all(bind=engine)
 
@@ -66,7 +72,9 @@ async def db_session_middleware(request: Request, call_next):
     '''
     response = Response("Internal server error", status_code=500)
     try:
+        logging.info("Creating session")
         request.state.db = SessionLocal()
+        logging.info("Session created")
         response = await call_next(request)
     finally:
         request.state.db.close()
