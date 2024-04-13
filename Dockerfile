@@ -28,9 +28,9 @@ RUN apt-get install -y --fix-missing \
 
 RUN pip install dlib==19.24.4
 
-COPY requirements.txt /app/requirements.txt
-WORKDIR /app
+COPY requirements.txt /code/requirements.txt
+WORKDIR /code
 RUN pip install -r requirements.txt
-COPY app /app/
+COPY app /code/app/
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
 
