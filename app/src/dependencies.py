@@ -11,6 +11,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY" , "09d25e094faa6ca2556c818166b7a9563b93f
 COOKIE_HTTP_ONLY = os.getenv("COOKIE_HTTP_ONLY", 1) == 1
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", 1) == 1
 ALGORITHM = "HS256"
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID", 1)
 
 def create_access_token(data: models.User, expires_delta: Optional[timedelta] = None):
     
@@ -41,10 +42,11 @@ def validate_permissions(request: Request=None):
     path = path.replace("/api/v1", "")
     logging.warning(f"Path: {path}")
     logging.warning(f"User ID: {request.state.user_id}")
-    if path == "/users/" and not request.state.user_id == 1:
-        raise HTTPException(status_code=403, detail="Access denied")
-    if path.startswith("/users/") and not path.startswith("/users/"+str(request.state.user_id)):
-        raise HTTPException(status_code=403, detail="Access denied")   
+    if path == "/users/":
+        if not request.state.user_id == ADMIN_USER_ID:
+            raise HTTPException(status_code=403, detail="Access denied only Admin have access")
+    elif path.startswith("/users/") and not path.startswith("/users/"+str(request.state.user_id)):
+        raise HTTPException(status_code=403, detail="Access denied only same user have access")   
     
 def set_cookie(response: Response,db_user: models.User):
     token = create_access_token(db_user)

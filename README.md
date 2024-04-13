@@ -67,5 +67,7 @@ docker-compose up
 ## Rebuilding docker image
 
 ```bash
-docker build -t swift-shop-gen-ai-fr .
+docker build . -t prajinults/swift-shop-gen-ai-fr
+docker run -d -p 5000:5000 prajinults/swift-shop-gen-ai-fr
+docker push prajinults/swift-shop-gen-ai-fr
 ```
