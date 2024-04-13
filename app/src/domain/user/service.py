@@ -8,10 +8,11 @@ import numpy as np
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 from . import models, schemas
-from fastapi import UploadFile
+from fastapi import UploadFile,HTTPException
 
 vector = np.vectorize(np.float_)
 GPU_ENABLED = os.getenv("GPU_ENABLED", 0) == 1
+THRESHOLD = os.getenv("THRESHOLD", 0.6)
 
 def get_user(db: Session, user_id: int) -> models.User:
     return db.query(models.User).filter(models.User.id == user_id).first()
@@ -41,15 +42,22 @@ async def get_user_by_face(db: Session, file: UploadFile):
     logging.warning("Detecting face")
     face_locations = face_recognition.face_locations(image)
     if len(face_locations) != 1:
-        raise ValueError("Image must contain exactly one face")
+        raise HTTPException(status_code=400, detail="Image must contain exactly one face")
     logging.warning("Encoding face")
     face_encodings = face_recognition.face_encodings(image, face_locations)
     logging.warning("Comparing face with database")
     face_encodings = vector(face_encodings[0])
-    user = db.scalars(select(models.Face).filter(models.Face.embedding.cosine_distance(face_encodings) < 5)).first()
+    user = db.scalars(select(models.Face).order_by(models.Face.embedding.l2_distance(face_encodings)).limit(1)).first()
     logging.warning(f"User: {user}")
     if user is None:
-        raise ValueError("Unrecognized face")
+        raise HTTPException(status_code=404, detail="Face not recognized")
+    logging.warning("Checking threshold")
+    distance = face_recognition.face_distance([user.embedding], face_encodings)
+    logging.warning(f"Distance: {distance}")
+    logging.warning(f"Threshold: {THRESHOLD}")
+    if distance > THRESHOLD:
+        logging.warning("Face not matched with any registered user")
+        raise HTTPException(status_code=404, detail="Face not matched with any registered user")
     logging.warning(f"Recognized user {user.user_id}")
     logging.warning(f"User: {user.user}")
     return user.user

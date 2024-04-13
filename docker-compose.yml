@@ -14,6 +14,7 @@ services:
       GPU_ENABLED: 0
       COOKIE_SECURE: 0
       COOKIE_HTTP_ONLY: 0
+      THRESHOLD: 0.6
   db:
     image: google/alloydbomni
     ports:

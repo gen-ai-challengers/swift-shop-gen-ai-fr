@@ -23,29 +23,28 @@ def create_access_token(data: models.User, expires_delta: Optional[timedelta] = 
     user_token.update({"exp": expire})
     logging.warning(f"Data: {user_token}")
     encoded_jwt =  jwt.encode(user_token, SECRET_KEY, algorithm=ALGORITHM)
-    logging.warning(f"Encoded JWT: {encoded_jwt}")
+    logging.warning(f"Encoded JWT for user id: {user_token.get('id')}")
     return encoded_jwt
 
 def validate_access_token(x_session_token: Annotated[str, Cookie()]=None,request: Request=None):
     try:
         payload = jwt.decode(x_session_token, SECRET_KEY, algorithms=[ALGORITHM])
         logging.warning(f"Payload: {payload}")
-        request.state.user_id = payload.get("user_id")
+        request.state.user_id = payload.get("id")
+        logging.warning(f"User ID: {request.state.user_id}")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
 def validate_permissions(request: Request=None):
-    try:
-        path = request.url.path
-        logging.warning(f"Path: {path}")
-        logging.warning(f"User ID: {request.state.user_id}")
-        if path.startswith("/users") and request.state.user_id not in path:
-            raise HTTPException(status_code=403, detail="Access denied")
-        if path == "/users" and not request.state.user_id == 1:
-            raise HTTPException(status_code=403, detail="Access denied")
-    except Exception as e:
-        logging.error(e)
-        raise HTTPException(status_code=401, detail="Invalid credentials")    
+    logging.warning("Validating permissions")
+    path = request.url.path
+    path = path.replace("/api/v1", "")
+    logging.warning(f"Path: {path}")
+    logging.warning(f"User ID: {request.state.user_id}")
+    if path == "/users/" and not request.state.user_id == 1:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if path.startswith("/users/") and not path.startswith("/users/"+str(request.state.user_id)):
+        raise HTTPException(status_code=403, detail="Access denied")   
     
 def set_cookie(response: Response,db_user: models.User):
     token = create_access_token(db_user)
