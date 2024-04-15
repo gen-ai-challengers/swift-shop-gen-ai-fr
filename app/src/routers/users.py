@@ -12,7 +12,7 @@ from ..dependencies import validate_access_token, validate_permissions
 
 router = APIRouter(tags=["users"])
 
-@router.get("/users/me", response_model=schemas.User, dependencies=[Depends(validate_access_token)])
+@router.get("/users/me/", response_model=schemas.User, dependencies=[Depends(validate_access_token)])
 def get_current_user(request: Request):
     db: Session = request.state.db
     db_user = service.get_user(db, user_id=request.state.user_id)
@@ -34,7 +34,7 @@ def read_users(request: Request, skip: int = 0, limit: int = 100):
     users = service.get_users(db, skip=skip, limit=limit)
     return users
 
-@router.get("/users/{user_id}", response_model=schemas.User, dependencies=[Depends(validate_access_token),Depends(validate_permissions)])
+@router.get("/users/{user_id}/", response_model=schemas.User, dependencies=[Depends(validate_access_token),Depends(validate_permissions)])
 def read_user(user_id: int, request: Request):
     db: Session = request.state.db
     db_user = service.get_user(db, user_id=user_id)
@@ -42,7 +42,7 @@ def read_user(user_id: int, request: Request):
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@router.post("/users/{user_id}/add-face", response_model=dict, dependencies=[Depends(validate_access_token),Depends(validate_permissions)])
+@router.post("/users/{user_id}/add-face/", response_model=dict, dependencies=[Depends(validate_access_token),Depends(validate_permissions)])
 async def add_face(user_id: int, request: Request,file: UploadFile):
     logging.warning(f"Adding face to user {user_id}")
     logging.warning(f"File Size: {file.size}")

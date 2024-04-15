@@ -55,7 +55,7 @@ def register(user: schemas.UserCreate, request: Request, response: Response):
     return {"message": f"JWT token generated successfully for user {db_user.id}", "user": schemas.User(**db_user.__dict__).model_dump()}
 
 
-@router.post("/recognize", response_model=dict)
+@router.post("/recognize/", response_model=dict)
 async def recognize(request: Request, response: Response, file: UploadFile):
     logging.warning(f"Recognizing user by face")
     logging.warning(f"File Size: {file.size}")

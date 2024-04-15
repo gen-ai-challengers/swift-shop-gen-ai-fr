@@ -23,9 +23,25 @@ from sqlalchemy import text
 
 def get_application() -> FastAPI:
     ''' Configure, start and return the application '''
-    
-    ## Start FastApi App 
+
+    # Start FastApi App
     application = FastAPI()
+
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "https://quiet-liberty-417104.web.app"
+    ]
+
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     try:
         logging.info("Creating extension vector")
         session = SessionLocal()
@@ -36,12 +52,12 @@ def get_application() -> FastAPI:
         session.close()
     except Exception as e:
         logging.error(f"Error creating extension: {e}")
-    ## Generate database tables
+    # Generate database tables
     Base.metadata.create_all(bind=engine)
-    ## Mapping api routes
+    # Mapping api routes
     application.include_router(router_api, prefix=API_PREFIX)
 
-    ## Add exception handlers
+    # Add exception handlers
     application.add_exception_handler(HTTPException, http_error_handler)
 
     return application
@@ -66,4 +82,3 @@ async def db_session_middleware(request: Request, call_next):
     finally:
         request.state.db.close()
     return response
-
