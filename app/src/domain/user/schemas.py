@@ -13,7 +13,7 @@ class Face(BaseModel):
 
 
 class UserBase(BaseModel):
-    email: str
+    phone: str
     
 
 class UserLogin(UserBase):
