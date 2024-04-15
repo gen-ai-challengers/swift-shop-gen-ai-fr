@@ -27,9 +27,9 @@ def create_access_token(data: models.User, expires_delta: Optional[timedelta] = 
     logging.warning(f"Encoded JWT for user id: {user_token.get('id')}")
     return encoded_jwt
 
-def validate_access_token(x_session_token: Annotated[str, Cookie()]=None,request: Request=None):
+def validate_access_token(__session: Annotated[str, Cookie()]=None,request: Request=None):
     try:
-        payload = jwt.decode(x_session_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(__session, SECRET_KEY, algorithms=[ALGORITHM])
         logging.warning(f"Payload: {payload}")
         request.state.user_id = payload.get("id")
         logging.warning(f"User ID: {request.state.user_id}")
@@ -50,13 +50,13 @@ def validate_permissions(request: Request=None):
     
 def set_cookie(response: Response,db_user: models.User):
     token = create_access_token(db_user)
-    response.set_cookie(key="x_session_token", value=token, httponly=COOKIE_HTTP_ONLY, secure=COOKIE_SECURE)
+    response.set_cookie(key="__session", value=token, httponly=COOKIE_HTTP_ONLY, secure=COOKIE_SECURE)
     response.set_cookie(key="x_user_id", value=str(db_user.id))
     response.set_cookie(key="x_phone", value=db_user.phone)
     response.set_cookie(key="x_is_active", value=str(db_user.is_active))
     response.set_cookie(key="x_username", value=db_user.name)
 def remove_cookie(response: Response):
-    response.delete_cookie("x_session_token")
+    response.delete_cookie("__session")
     response.delete_cookie("x_user_id")
     response.delete_cookie("x_phone")
     response.delete_cookie("x_is_active")

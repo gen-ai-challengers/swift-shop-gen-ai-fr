@@ -1,8 +1,10 @@
 import logging
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 
+import psycopg2
 from starlette.exceptions import HTTPException
 
 from .src.routers.api import router as router_api
@@ -73,12 +75,25 @@ async def db_session_middleware(request: Request, call_next):
     a new SQLAlchemy SessionLocal for each request, add it to
     the request and then close it once the request is finished.
     '''
-    response = Response("Internal server error", status_code=500)
+    response = JSONResponse(content={"message": "Internal server error"}, status_code=500)
     try:
         logging.info("Creating session")
         request.state.db = SessionLocal()
         logging.info("Session created")
         response = await call_next(request)
+    except Exception as e:
+        logging.error(f"Exception: {type(e.__cause__)}")
+        logging.error(f"Exception: {isinstance(e.__cause__, psycopg2.errors.UniqueViolation)}")
+        if isinstance(e.__cause__, psycopg2.errors.UniqueViolation):
+            logging.error(f">>>>> Duplicate key error: {e}")
+            message = e.__cause__.diag.message_detail
+            message = message.replace("Key", "Field")
+            message = message.replace("=", " with value ")
+            message = message.replace("(", "").replace(")", "")
+            logging.error(f">>>>> Duplicate key error:{message}")
+            response = JSONResponse(content={"message": message}, status_code=400)
+        else:    
+            logging.error(f"Unknown Exception: {e}")
     finally:
         request.state.db.close()
     return response
