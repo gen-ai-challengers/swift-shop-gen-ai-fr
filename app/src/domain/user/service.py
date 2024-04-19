@@ -31,10 +31,8 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     db.refresh(db_user)
     return db_user
 
-async def get_user_by_face(db: Session, file: UploadFile):
-    logging.warning(f"Recognizing user by face")
-    request_object_content = await file.read()
-    logging.warning("Opening image")
+async def get_user_by_face(db: Session, request_object_content: bytes):
+
     image = PIL.Image.open(io.BytesIO(request_object_content))
     logging.warning("Converting image to RGB")
     image = image.convert("RGB")
@@ -62,10 +60,8 @@ async def get_user_by_face(db: Session, file: UploadFile):
     logging.warning(f"User: {user.user}")
     return user.user
 
-async def add_user_face(db: Session, file: UploadFile, user_id: int):
-    logging.warning(f"Adding face to user {user_id}")
-    logging.warning("Reading file content")
-    request_object_content = await file.read()
+async def add_user_face(db: Session, request_object_content: bytes, user_id: int):
+
     logging.warning("Opening image")
     image = PIL.Image.open(io.BytesIO(request_object_content))
     image = image.convert("RGB")

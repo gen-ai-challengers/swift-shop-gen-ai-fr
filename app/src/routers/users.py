@@ -1,4 +1,6 @@
 import logging
+
+import base64
 from typing import List,Annotated
 
 from fastapi import APIRouter, Request, HTTPException, UploadFile, Depends
@@ -42,11 +44,19 @@ def read_user(user_id: int, request: Request):
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@router.post("/users/{user_id}/add-face/", response_model=dict, dependencies=[Depends(validate_access_token),Depends(validate_permissions)])
-async def add_face(user_id: int, request: Request,file: UploadFile):
-    logging.warning(f"Adding face to user {user_id}")
-    logging.warning(f"File Size: {file.size}")
-    logging.warning(f"File Name: {file.filename}")
+@router.post("/users/me/add-face/", response_model=dict, dependencies=[Depends(validate_access_token)])
+async def add_face(face: schemas.FaceFile, request: Request):
+    user_id = request.state.user_id
+    logging.warning(user_id)
+    logging.warning(f"converting base64 to image")
+    try:
+        data_split = face.file.split('base64,')
+        encoded_data = data_split[1]
+        file = base64.b64decode(encoded_data)
+    except Exception as e:
+        logging.error(f"Error splitting data")
+        logging.error(e)
+        raise HTTPException(status_code=400, detail="Invalid data")
     db: Session = request.state.db
     db_user = service.get_user(db, user_id=user_id)
     if db_user is None:

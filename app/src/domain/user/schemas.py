@@ -3,6 +3,10 @@ from pydantic import BaseModel
 import numpy as np
 import datetime
 
+
+class FaceFile(BaseModel):
+    file: str
+
 class Face(BaseModel):
     id: int
     embedding: float = None

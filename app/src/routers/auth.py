@@ -4,6 +4,7 @@ import bcrypt
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+import base64
 
 from fastapi import APIRouter, Request, HTTPException, Response, UploadFile
 
@@ -56,10 +57,17 @@ def register(user: schemas.UserCreate, request: Request, response: Response):
 
 
 @router.post("/recognize/", response_model=dict)
-async def recognize(request: Request, response: Response, file: UploadFile):
-    logging.warning(f"Recognizing user by face")
-    logging.warning(f"File Size: {file.size}")
-    logging.warning(f"File Name: {file.filename}")
+async def recognize(request: Request, response: Response, face: schemas.FaceFile):
+    logging.warning(f"converting base64 to image")
+    try:
+        data_split = face.file.split('base64,')
+        encoded_data = data_split[1]
+        file = base64.b64decode(encoded_data)
+    except Exception as e:
+        logging.error(f"Error splitting data")
+        logging.error(e)
+        raise HTTPException(status_code=400, detail="Invalid data")
+
     db: Session = request.state.db
     db_user = await service.get_user_by_face(db, file)
     logging.warning(f"User found: {db_user}")
