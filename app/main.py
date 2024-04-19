@@ -1,5 +1,6 @@
 import logging
 from fastapi import Depends, FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,6 +75,7 @@ def get_application() -> FastAPI:
     Base.metadata.create_all(bind=engine)
     # Mapping api routes
     application.include_router(router_api, prefix=API_PREFIX)
+    application.mount("/", StaticFiles(directory="public"), name="public")
 
     # Add exception handlers
     application.add_exception_handler(HTTPException, http_error_handler)

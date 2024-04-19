@@ -4,10 +4,10 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 from . import models, schemas
-from ...dependencies import face_distance, embed_single_face
+from ...dependencies import check_matching, embed_single_face
 from fastapi import  HTTPException
 
-THRESHOLD = os.getenv("THRESHOLD", 0.6)
+
 
 
 def get_user(db: Session, user_id: int) -> models.User:
@@ -38,17 +38,12 @@ async def get_user_by_face(db: Session, face: bytes):
     face_encodings = embed_single_face(face)
     user = db.scalars(select(models.Face).order_by(
         models.Face.embedding.l2_distance(face_encodings)).limit(1)).first()
-    logging.warning(f"User: {user}")
+    logging.warning(f"User: {user.user_id}")
     if user is None:
         raise HTTPException(status_code=404, detail="Face not recognized")
     logging.warning("Checking threshold")
-    distance = face_distance([user.embedding], face_encodings)
+    distance = check_matching([user.embedding], face_encodings)
     logging.warning(f"Distance: {distance}")
-    logging.warning(f"Threshold: {THRESHOLD}")
-    if distance > THRESHOLD:
-        logging.warning("Face not matched with any registered user")
-        raise HTTPException(
-            status_code=404, detail="Face not matched with any registered user")
     logging.warning(f"Recognized user {user.user_id}")
     logging.warning(f"User: {user.user}")
     return user.user

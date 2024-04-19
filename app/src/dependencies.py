@@ -11,7 +11,10 @@ from datetime import datetime, timedelta
 from typing import Optional, Annotated
 from fastapi import Cookie,Response, HTTPException, Request
 from deepface import DeepFace
+from deepface.modules.verification import find_threshold,find_distance,l2_normalize
 from .domain.user import models, schemas
+
+
 
 vector = np.vectorize(np.float_)
 
@@ -21,6 +24,11 @@ COOKIE_HTTP_ONLY = os.getenv("COOKIE_HTTP_ONLY", 1) == 1
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", 1) == 1
 ALGORITHM = "HS256"
 ADMIN_USER_ID = os.getenv("ADMIN_USER_ID", 1)
+
+
+MODEL_NAME = os.getenv("MODEL_NAME", "GhostFaceNet")
+DISTANCE_METRIC = os.getenv("DISTANCE_METRIC", "euclidean_l2")
+
 
 def create_access_token(data: models.User, expires_delta: Optional[timedelta] = None):
     
@@ -72,19 +80,15 @@ def remove_cookie(response: Response):
     response.delete_cookie("x_username")
 
 
-def face_distance(face_encodings, face_to_compare):
-    """
-    Given a list of face encodings, compare them to a known face encoding and get a euclidean distance
-    for each comparison face. The distance tells you how similar the faces are.
-
-    :param faces: List of face encodings to compare
-    :param face_to_compare: A face encoding to compare against
-    :return: A numpy ndarray with the distance for each face in the same order as the 'faces' array
-    """
-    if len(face_encodings) == 0:
-        return np.empty((0))
-
-    return np.linalg.norm(face_encodings - face_to_compare, axis=1)
+def check_matching(face_encodings, face_to_compare):
+    threshold = find_threshold(MODEL_NAME, DISTANCE_METRIC)
+    logging.warning(f"Threshold: {threshold}")
+    distance = find_distance(face_encodings, face_to_compare, DISTANCE_METRIC)
+    logging.warning(f"Distance: {distance}")
+    if distance > threshold:
+        raise HTTPException(status_code=400, detail="Face not recognized")
+    return distance
+    
 
 def embed_single_face(face:bytes):
     image = PIL.Image.open(io.BytesIO(face))
@@ -92,15 +96,15 @@ def embed_single_face(face:bytes):
     image = image.convert("RGB")
     image = np.array(image)
     logging.warning("Detecting face")
-    face_locations: List[Dict[str, Any]] = DeepFace.extract_faces(image)
+    face_locations: List[Dict[str, Any]] = DeepFace.extract_faces(image,enforce_detection=False)
     logging.warning(f"Face locations: {len(face_locations)}")
     if len(face_locations) != 1:
         raise HTTPException(status_code=400, detail="Image must contain exactly one face")
     logging.warning("Encoding face")
-    response:List[Dict[str, Any]] = DeepFace.represent(image, model_name='GhostFaceNet')
+    response:List[Dict[str, Any]] = DeepFace.represent(image, model_name=MODEL_NAME,enforce_detection=False)
     if len(response) != 1:
         raise HTTPException(status_code=400, detail="Image must contain exactly one face")
-    face_encodings:List[float] = response[0]['embedding']
+    face_encodings:List[float] = l2_normalize(response[0]['embedding'])
     embeddings = vector(face_encodings)
     logging.warning(f"Embeddings length: {len(embeddings)}")
     return embeddings
