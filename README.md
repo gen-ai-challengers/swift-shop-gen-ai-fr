@@ -32,15 +32,6 @@ Git bash on windows
 source venv/Scripts/activate 
 ```
 
-Install Dlib dependencies
-
-install cmake from <https://cmake.org/download/>
-
-```bash
-pip install setuptools dlib
-
-```
-
 Install app dependencies
 
 ```bash

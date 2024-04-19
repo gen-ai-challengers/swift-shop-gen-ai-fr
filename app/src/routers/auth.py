@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..domain.user import service, schemas
 
-from ..dependencies import set_cookie, remove_cookie
+from ..dependencies import set_cookie, remove_cookie, convert_base64_to_image
 
 SECRET_KEY = os.getenv(
     "JWT_SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
@@ -58,15 +58,7 @@ def register(user: schemas.UserCreate, request: Request, response: Response):
 
 @router.post("/recognize/", response_model=dict)
 async def recognize(request: Request, response: Response, face: schemas.FaceFile):
-    logging.warning(f"converting base64 to image")
-    try:
-        data_split = face.file.split('base64,')
-        encoded_data = data_split[1]
-        file = base64.b64decode(encoded_data)
-    except Exception as e:
-        logging.error(f"Error splitting data")
-        logging.error(e)
-        raise HTTPException(status_code=400, detail="Invalid data")
+    file = convert_base64_to_image(face.file)
 
     db: Session = request.state.db
     db_user = await service.get_user_by_face(db, file)

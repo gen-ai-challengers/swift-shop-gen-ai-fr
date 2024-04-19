@@ -18,6 +18,8 @@ from .src.routers.handlers.http_error import http_error_handler
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
+
+import tensorflow as tf
 ###
 # Main application file
 ###
@@ -45,11 +47,25 @@ def get_application() -> FastAPI:
     )
 
     try:
-        logging.info("Creating extension vector")
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+            logging.warning(f"Num GPUs Available: {len(gpus)}")
+            for gpu in gpus:
+                logging.warning(f"GPU: {gpu}")
+        else:
+            logging.warning("No GPUs Available")            
+            cpus = tf.config.list_physical_devices('CPU')
+            if cpus:
+                logging.warning(f"Num CPUs Available: {len(cpus)} ")
+                for cpu in cpus:
+                    logging.warning(f"CPU: {cpu}")    
+                logging.warning("Creating extension vector")
+            else:
+                logging.warning("No CPUs Available")
         session = SessionLocal()
-        logging.info("Session created")
+        logging.warning("Session created")
         session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        logging.info("Extension vector created")
+        logging.warning("Extension vector created")
         session.commit()
         session.close()
     except Exception as e:
@@ -77,9 +93,9 @@ async def db_session_middleware(request: Request, call_next):
     '''
     response = JSONResponse(content={"message": "Internal server error"}, status_code=500)
     try:
-        logging.info("Creating session")
+        logging.warning("Creating session")
         request.state.db = SessionLocal()
-        logging.info("Session created")
+        logging.warning("Session created")
         response = await call_next(request)
     except Exception as e:
         logging.error(f"Exception: {type(e.__cause__)}")
