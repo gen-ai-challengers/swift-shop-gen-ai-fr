@@ -1,13 +1,15 @@
+
+
 import bcrypt
 import os
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
+from fastapi import HTTPException
+from typing import Union
+from av import VideoFrame
 from . import models, schemas
 from ...dependencies import check_matching, embed_single_face
-from fastapi import  HTTPException
-
-
 
 
 def get_user(db: Session, user_id: int) -> models.User:
@@ -33,7 +35,7 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     return db_user
 
 
-async def get_user_by_face(db: Session, face: bytes):
+async def get_user_by_face(db: Session, face: Union[bytes, str, VideoFrame]):
 
     face_encodings = embed_single_face(face)
     user = db.scalars(select(models.Face).order_by(
@@ -49,7 +51,7 @@ async def get_user_by_face(db: Session, face: bytes):
     return user.user
 
 
-async def add_user_face(db: Session, face: bytes, user_id: int):
+async def add_user_face(db: Session, face: Union[bytes, str, VideoFrame], user_id: int):
 
     face_encodings = embed_single_face(face)
     db_face = models.Face(embedding=face_encodings, user_id=user_id)

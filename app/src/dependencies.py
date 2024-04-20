@@ -6,7 +6,9 @@ import io
 import base64
 
 import numpy as np
-from typing import Dict,Any,List
+
+from av import VideoFrame
+from typing import Dict,Any,List, Union
 from datetime import datetime, timedelta
 from typing import Optional, Annotated
 from fastapi import Cookie,Response, HTTPException, Request
@@ -90,8 +92,18 @@ def check_matching(face_encodings, face_to_compare):
     return distance
     
 
-def embed_single_face(face:bytes):
-    image = PIL.Image.open(io.BytesIO(face))
+def embed_single_face(face:Union[bytes, str, VideoFrame]):
+    logging.warning("Converting image")
+    if isinstance(face, VideoFrame):
+        logging.warning("Converting VideoFrame to image")
+        image = PIL.Image.fromarray(face.to_ndarray(format="bgr24"))
+    elif isinstance(face, str):
+        logging.warning("Converting base64 to image")
+        face = convert_base64_to_image(face)
+        image = PIL.Image.open(io.BytesIO(face))
+    else:
+        logging.warning("Converting bytes to image")
+        image = PIL.Image.open(io.BytesIO(face))
     logging.warning("Converting image to RGB")
     image = image.convert("RGB")
     image = np.array(image)

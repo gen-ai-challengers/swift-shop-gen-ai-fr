@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from aiortc.contrib.media import MediaRelay
 from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -26,11 +28,28 @@ import tensorflow as tf
 ###
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # set pcs and relay as app attributes
+    logging.warning("####### set pcs and relay as app attributes ######")
+    app.pcs = set()
+    app.relay = MediaRelay()
+    yield
+    # close peer connections
+    logging.warning("####### stopping applications ###########")
+    if app.pcs:
+        logging.warning("$$$$$$$$$$$$$ close peer connections $$$$$$$$$$$$$$")
+        coros = [pc.close() for pc in app.pcs]
+        await asyncio.gather(*coros)
+        app.pcs.clear()
+        app.relay.close()
+        app.relay = None
+
 def get_application() -> FastAPI:
     ''' Configure, start and return the application '''
 
     # Start FastApi App
-    application = FastAPI()
+    application = FastAPI(lifespan=lifespan)
 
     origins = [
         "http://localhost:3000",
@@ -84,6 +103,10 @@ def get_application() -> FastAPI:
 
 
 app = get_application()
+
+
+
+
 
 
 @app.middleware("http")

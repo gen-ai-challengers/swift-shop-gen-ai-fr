@@ -4,6 +4,12 @@ import numpy as np
 import datetime
 
 
+
+class FaceWebRtcOffer(BaseModel):
+    sdp: str
+    type: str
+    action: str
+
 class FaceFile(BaseModel):
     file: str
 

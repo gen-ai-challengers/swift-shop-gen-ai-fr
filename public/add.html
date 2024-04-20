@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Recognition App</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+      #main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+      .camera {
+        height: 200px;
+      }
+
+      .captured-image {
+        width: 200px;
+        height: auto;
+        margin: 3px;
+      }
+
+      #results {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="main">
+        <video class="camera" id="videoElement" autoplay></video>
+        <br />
+        <input
+          type="text"
+          v-model="user_name"
+          title="name"
+          placeholder="name"
+        />
+        <button id="button" @click="captureImage">Register face</button>
+        <br />
+        <a href="/index.html">Recognize</a>
+      </div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <script>
+      const { createApp, ref, defineModel } = Vue;
+
+      createApp({
+        setup() {
+          const user_name = ref("");
+          console.log(user_name);
+
+          const myHeaders = new Headers();
+          myHeaders.append("accept", "application/json");
+          myHeaders.append("Content-Type", "application/json");
+          const raw = JSON.stringify({
+            phone: "string",
+            password: "string",
+          });
+
+          const requestOptions = {
+            method: "POST",
+            headers: myHeaders,
+            body: raw,
+            redirect: "follow",
+          };
+
+          fetch("/api/login/", requestOptions)
+            .then((response) => response.text())
+            .then((result) => console.log(result))
+            .catch((error) => console.error(error));
+
+          const captureImage = async () => {
+            document.getElementById("button").disabled = true;
+            document.getElementById("button").innerText = "Processing...";
+            const videoElement = document.getElementById("videoElement");
+            const canvas = document.createElement("canvas");
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            canvas.className = "captured-image";
+            canvas
+              .getContext("2d")
+              .drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const results = document.getElementById("results");
+            const firstElement = results.firstChild;
+            results.insertBefore(canvas, firstElement);
+            const imageData = canvas.toDataURL("image/jpeg");
+            const response = await sendToRecognitionAPI(imageData);
+            console.log(response);
+            console.log(response.user_name);
+            // write name to canvas
+            const ctx = canvas.getContext("2d");
+            ctx.font = "38px serif";
+            ctx.fillStyle = "red";
+            ctx.fillText(response.user_name || "Unknown", 10, 50);
+            ctx.font = "38px serif";
+            ctx.fillStyle = "blue";
+            ctx.fillText(response.message, 10, 100);
+            ctx.font = "38px serif";
+            ctx.fillStyle = "green";
+            ctx.fillText(new Date().toLocaleString(), 10, 150);
+            document.getElementById("button").disabled = false;
+            document.getElementById("button").innerText = "Register face";
+          };
+
+          const sendToRecognitionAPI = async (file) => {
+            console.log(user_name);
+            try {
+              console.log(file);
+              const myHeaders = new Headers();
+              myHeaders.append("accept", "application/json");
+              myHeaders.append("Content-Type", "application/json");
+
+              const raw = JSON.stringify({
+                file: file,
+              });
+
+              const requestOptions = {
+                method: "POST",
+                headers: myHeaders,
+                body: raw,
+                redirect: "follow",
+              };
+
+              const response = await fetch(
+                "/api/v1/users/me/add-face/",
+                requestOptions
+              );
+              const data = await response.json();
+              console.log(data); // You can handle the response here
+              return data;
+            } catch (error) {
+              console.error("Error:", error);
+              return { message: "Error recognizing face" };
+            }
+          };
+
+          const dataURLtoFile = (dataUrl, filename) => {
+            const arr = dataUrl.split(",");
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+              u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, { type: mime });
+          };
+
+          return {
+            user_name,
+            captureImage,
+          };
+        },
+        mounted() {
+          navigator.mediaDevices
+            .getUserMedia({
+              video: {
+                width: {
+                  min: 200,
+                  max: 800,
+                },
+                height: {
+                  min: 200,
+                  max: 800,
+                },
+              },
+            })
+            .then((stream) => {
+              const videoElement = document.getElementById("videoElement");
+              videoElement.srcObject = stream;
+            })
+            .catch((err) => console.error("Error accessing camera:", err));
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
