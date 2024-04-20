@@ -52,13 +52,13 @@ ___
 Starting database (postgres:alpine3.14)
 
 ```bash
-docker-compose up
+docker-compose up -d
 ```
 
 ## Rebuilding docker image
 
 ```bash
 docker build . -t prajinults/swift-shop-gen-ai-fr:v2.1.0
-docker run -d -p 5000:5000 prajinults/swift-shop-gen-ai-fr
+docker run -d -p 8080:8080 prajinults/swift-shop-gen-ai-fr
 docker push prajinults/swift-shop-gen-ai-fr:v2.1.0
 ```

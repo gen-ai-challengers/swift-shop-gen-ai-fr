@@ -4,6 +4,7 @@ from aiortc.contrib.media import MediaRelay
 from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from deepface.modules import modeling
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -42,7 +43,6 @@ async def lifespan(app: FastAPI):
         coros = [pc.close() for pc in app.pcs]
         await asyncio.gather(*coros)
         app.pcs.clear()
-        app.relay.close()
         app.relay = None
 
 def get_application() -> FastAPI:
@@ -82,6 +82,7 @@ def get_application() -> FastAPI:
                 logging.warning("Creating extension vector")
             else:
                 logging.warning("No CPUs Available")
+        modeling.build_model("GhostFaceNet")        
         session = SessionLocal()
         logging.warning("Session created")
         session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
