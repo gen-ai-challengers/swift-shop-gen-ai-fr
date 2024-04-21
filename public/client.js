@@ -17,12 +17,29 @@ function createPeerConnection() {
   };
 
   if (document.getElementById("use-stun").checked) {
-    config.iceServers = [
-      { urls: "stun:freeturn.net:5349" },
-      { urls: "turns:freeturn.tel:5349", username: "free", credential: "free" },
-    ];
+    let iceServers=[];
+    try {
+      const text = document.getElementById("use-stun-value").value.trim();
+      if (!text) {
+        throw new Error("empty value");
+      }
+      console.log("STUN/TURN server value:",text);
+      
+      iceServers = eval(text);
+      console.log("STUN/TURN server value after parse:",iceServers);
+      if (!Array.isArray(iceServers)) {
+        throw new Error("iceServers not an array");
+      }
+      
+    } catch (error) {
+      console.error("Invalid STUN/TURN server value",error);
+      alert("Invalid STUN/TURN server value"+error);
+      return;
+    }
+    config.iceServers = iceServers
   }
 
+  console.log("RTCPeerConnection configuration:", config);
   pc = new RTCPeerConnection(config);
 
   // register some listeners to help debugging

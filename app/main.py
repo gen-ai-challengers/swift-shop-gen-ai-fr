@@ -137,5 +137,8 @@ async def db_session_middleware(request: Request, call_next):
         else:    
             logging.error(f"Unknown Exception: {e}")
     finally:
+        logging.warning("Closing session")
         request.state.db.close()
+        logging.warning("Session closed")
+        
     return response

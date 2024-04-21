@@ -13,6 +13,7 @@ RUN apt-get install -y --fix-missing \
 COPY requirements.txt /code/requirements.txt
 WORKDIR /code
 RUN pip install -r requirements.txt
+COPY models /home/.deepface/
 COPY models /root/.deepface/
 COPY app /code/app/
 COPY public /code/public/
