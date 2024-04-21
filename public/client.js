@@ -10,13 +10,17 @@ var pc = null;
 // data channel
 var dc = null,
   dcInterval = null;
+  var startTime;
 
 function createPeerConnection() {
+  // create an RTCPeerConnection
+  console.log("1.1 Creating RTCPeerConnection", new Date().getTime() - startTime);
   var config = {
     sdpSemantics: "unified-plan",
   };
 
   if (document.getElementById("use-stun").checked) {
+    console.log("Using STUN server");
     let iceServers=[];
     try {
       const text = document.getElementById("use-stun-value").value.trim();
@@ -34,18 +38,34 @@ function createPeerConnection() {
     } catch (error) {
       console.error("Invalid STUN/TURN server value",error);
       alert("Invalid STUN/TURN server value"+error);
+      document.getElementById("start").style.display = "inline-block";
       return;
     }
     config.iceServers = iceServers
   }
 
   console.log("RTCPeerConnection configuration:", config);
+  try{
   pc = new RTCPeerConnection(config);
+  }catch(e){
+    console.error("Error creating RTCPeerConnection",e);
+    alert("Error creating RTCPeerConnection"+e);
+    document.getElementById("start").style.display = "inline-block";
+    return;
+  }
+  if (!pc) {
+    console.error("Failed to create RTCPeerConnection");
+    alert("Failed to create RTCPeerConnection");
+    document.getElementById("start").style.display = "inline-block";
+    return;
+  }
+  console.log("RTCPeerConnection created", new Date().getTime() - startTime);
 
   // register some listeners to help debugging
   pc.addEventListener(
     "icegatheringstatechange",
     () => {
+      console.log(" -> ICE gathering state change to:", pc.iceGatheringState,new Date().getTime() - startTime);
       iceGatheringLog.textContent += " -> " + pc.iceGatheringState;
     },
     false
@@ -55,6 +75,7 @@ function createPeerConnection() {
   pc.addEventListener(
     "iceconnectionstatechange",
     () => {
+      console.log(" -> ICE connection state change to:", pc.iceConnectionState,new Date().getTime() - startTime);
       iceConnectionLog.textContent += " -> " + pc.iceConnectionState;
     },
     false
@@ -64,6 +85,7 @@ function createPeerConnection() {
   pc.addEventListener(
     "signalingstatechange",
     () => {
+      console.log(" -> Signaling state change to:", pc.signalingState,new Date().getTime() - startTime);
       signalingLog.textContent += " -> " + pc.signalingState;
     },
     false
@@ -72,6 +94,7 @@ function createPeerConnection() {
 
   // connect audio / video
   pc.addEventListener("track", (evt) => {
+    console.log("Got MediaStreamTrack:", evt.track, "from receiver:", evt.receiver,new Date().getTime() - startTime);
     if (evt.track.kind == "video")
       document.getElementById("video").srcObject = evt.streams[0];
     else document.getElementById("audio").srcObject = evt.streams[0];
@@ -110,28 +133,15 @@ function enumerateInputDevices() {
 }
 
 function negotiate() {
+  console.log("2 Negotiating", new Date().getTime() - startTime);
   return pc
     .createOffer()
     .then((offer) => {
+      console.log("2 Setting local description", new Date().getTime() - startTime);
       return pc.setLocalDescription(offer);
     })
     .then(() => {
-      // wait for ICE gathering to complete
-      return new Promise((resolve) => {
-        if (pc.iceGatheringState === "complete") {
-          resolve();
-        } else {
-          function checkState() {
-            if (pc.iceGatheringState === "complete") {
-              pc.removeEventListener("icegatheringstatechange", checkState);
-              resolve();
-            }
-          }
-          pc.addEventListener("icegatheringstatechange", checkState);
-        }
-      });
-    })
-    .then(() => {
+      console.log("2 Negotiation complete", new Date().getTime() - startTime);
       var offer = pc.localDescription;
       var codec;
 
@@ -146,6 +156,7 @@ function negotiate() {
       }
 
       document.getElementById("offer-sdp").textContent = offer.sdp;
+      console.log("2 Sending offer to server", new Date().getTime() - startTime);
       return fetch("/api/offer-fr/", {
         body: JSON.stringify({
           sdp: offer.sdp,
@@ -159,9 +170,11 @@ function negotiate() {
       });
     })
     .then((response) => {
+      console.log("2 Got answer from server", new Date().getTime() - startTime);
       return response.json();
     })
     .then((answer) => {
+      console.log("Setting remote description");
       document.getElementById("answer-sdp").textContent = answer.sdp;
       return pc.setRemoteDescription(answer);
     })
@@ -171,9 +184,15 @@ function negotiate() {
 }
 
 function start() {
+  startTime = new Date().getTime();
   document.getElementById("start").style.display = "none";
 
+  console.log("1 Starting call", new Date().getTime() - startTime);
   pc = createPeerConnection();
+  console.log("1.1 Peer connection created", new Date().getTime() - startTime);
+  console.log("pc.iceConnectionState",pc.iceConnectionState, new Date().getTime() - startTime);
+  console.log("pc.iceGatheringState",pc.iceGatheringState, new Date().getTime() - startTime);
+  console.log("pc.signalingState",pc.signalingState, new Date().getTime() - startTime);
 
   var time_start = null;
 
@@ -262,10 +281,15 @@ function start() {
       document.getElementById("media").style.display = "block";
     }
     navigator.mediaDevices.getUserMedia(constraints).then(
+      
       (stream) => {
+        console.log("pc.iceConnectionState",pc.iceConnectionState, new Date().getTime() - startTime);
+        console.log("pc.iceGatheringState",pc.iceGatheringState, new Date().getTime() - startTime);
+        console.log("pc.signalingState",pc.signalingState, new Date().getTime() - startTime);
         stream.getTracks().forEach((track) => {
           pc.addTrack(track, stream);
         });
+        console.log("1.1 Media acquired", new Date().getTime() - startTime);
         return negotiate();
       },
       (err) => {
@@ -273,14 +297,16 @@ function start() {
       }
     );
   } else {
+    console.log("1.1 No media selected", new Date().getTime() - startTime);
     negotiate();
   }
-
+  console.log("Call started", new Date().getTime() - startTime);
   document.getElementById("stop").style.display = "inline-block";
 }
 
 function stop() {
   document.getElementById("stop").style.display = "none";
+  document.getElementById("start").style.display = "inline-block";
 
   // close data channel
   if (dc) {
