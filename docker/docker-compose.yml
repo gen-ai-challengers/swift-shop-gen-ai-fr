@@ -41,7 +41,7 @@ services:
       - db
   certbot:
     image: certbot/certbot:v2.10.0
-    command: certonly --standalone --preferred-challenges http --email prajin.ults@gmail.com -d app.genai.amprajin.in --agree-tos --no-eff-email --force-renewal -v
+    command: certonly --standalone --preferred-challenges http --email prajin.ults@gmail.com -d app.genai.amprajin.in --agree-tos --no-eff-email --force-renewal -v && chmod -R 777 /etc/letsencrypt
     volumes:
       - ./etc/letsencrypt:/etc/letsencrypt
 volumes:
