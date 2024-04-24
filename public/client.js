@@ -141,6 +141,22 @@ function negotiate() {
       return pc.setLocalDescription(offer);
     })
     .then(() => {
+      // wait for ICE gathering to complete
+      return new Promise((resolve) => {
+        if (pc.iceGatheringState === "complete") {
+          resolve();
+        } else {
+          function checkState() {
+            if (pc.iceGatheringState === "complete") {
+              pc.removeEventListener("icegatheringstatechange", checkState);
+              resolve();
+            }
+          }
+          pc.addEventListener("icegatheringstatechange", checkState);
+        }
+      });
+    })
+    .then(() => {
       console.log("2 Negotiation complete", new Date().getTime() - startTime);
       var offer = pc.localDescription;
       var codec;

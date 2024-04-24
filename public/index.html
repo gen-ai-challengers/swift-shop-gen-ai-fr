@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebRTC demo</title>
+    <title>WebRTC demo v2.5.0</title>
     <style>
       button {
         padding: 8px 16px;
@@ -85,10 +85,12 @@
     <div class="option">
       <textarea id="use-stun-value" title="stun-value" rows="10" cols="50">
 [
-        {
-          urls: "stun:stun.relay.metered.ca:80",
-        },
         
+        {
+          urls: "turn:turn.genai-vm.amprajin.in:3478",
+          username: "genai",
+          credential: "genai",
+        }
     ]
     </textarea
       >

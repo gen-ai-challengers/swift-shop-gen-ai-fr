@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..domain.user import service, schemas
 from ..dependencies import validate_access_token, validate_permissions, convert_base64_to_image
-
+from .webrtc_fr import offer
 
 router = APIRouter(tags=["users"])
 
@@ -43,6 +43,10 @@ def read_user(user_id: int, request: Request):
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
+
+@router.post("/users/me/add-face-offer/", response_model=dict, dependencies=[Depends(validate_access_token)])
+async def add_face_offer(offer_request: schemas.FaceWebRtcOffer, request: Request):
+    return offer(offer_request, request)
 
 @router.post("/users/me/add-face/", response_model=dict, dependencies=[Depends(validate_access_token)])
 async def add_face(face: schemas.FaceFile, request: Request):

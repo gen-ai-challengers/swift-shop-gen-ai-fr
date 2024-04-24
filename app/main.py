@@ -22,6 +22,7 @@ from .src.routers.handlers.http_error import http_error_handler
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
+from requests import get
 
 import tensorflow as tf
 ###
@@ -67,6 +68,13 @@ def get_application() -> FastAPI:
     )
 
     try:
+        ipv4 = get('https://api.ipify.org').content.decode('utf8')
+        logging.warning('My public IP V4 address is: {}'.format(ipv4))
+        ipv6 = get('https://api64.ipify.org').content.decode('utf8')
+        logging.warning('My public IP V6 address is: {}'.format(ipv6))
+    except Exception as e:
+        logging.error(f"Error getting ip: {e}")
+    try:
         gpus = tf.config.list_physical_devices('GPU')
         if gpus:
             logging.warning(f"Num GPUs Available: {len(gpus)}")
@@ -82,7 +90,13 @@ def get_application() -> FastAPI:
                 logging.warning("Creating extension vector")
             else:
                 logging.warning("No CPUs Available")
-        modeling.build_model("GhostFaceNet")        
+    except Exception as e:
+        logging.error(f"Error getting cpu info: {e}")    
+    try:            
+        modeling.build_model("GhostFaceNet")
+    except Exception as e:
+        logging.error(f"Error loading model: {e}")        
+    try:            
         session = SessionLocal()
         logging.warning("Session created")
         session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))

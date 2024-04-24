@@ -59,9 +59,9 @@ docker-compose up -d
 
 ```bash
 docker build . -t prajinults/swift-shop-gen-ai-fr
-docker tag prajinults/swift-shop-gen-ai-fr  prajinults/swift-shop-gen-ai-fr:v2.5.0
+docker tag prajinults/swift-shop-gen-ai-fr  prajinults/swift-shop-gen-ai-fr:v2.6.0
 docker push prajinults/swift-shop-gen-ai-fr
-docker push prajinults/swift-shop-gen-ai-fr:v2.5.0
+docker push prajinults/swift-shop-gen-ai-fr:v2.6.0
 
 docker run -d -p 8080:8080 prajinults/swift-shop-gen-ai-fr
 

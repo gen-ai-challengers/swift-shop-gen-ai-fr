@@ -1,0 +1,50 @@
+version: '3'
+services:
+  coturn_server:
+    image: coturn/coturn:4.5.2
+    restart: always
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf
+  app:
+    image: prajinults/swift-shop-gen-ai-fr
+    ports:
+      - 8080:8080
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_PWD: password
+      DB_USER: postgres
+      GPU_ENABLED: 0
+      COOKIE_SECURE: 0
+      COOKIE_HTTP_ONLY: 0
+      THRESHOLD: 0.6
+  db:
+    image: google/alloydbomni
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  nginx:
+    image: bitnami/nginx:1.25.5
+    ports:
+      - 80:8080
+      - 443:8443
+    volumes:
+      - ./app:/app
+      - ./nginx.conf:/opt/bitnami/nginx/conf/nginx.conf
+      - ./server_blocks:/opt/bitnami/nginx/conf/server_blocks/
+    depends_on:
+      - app
+      - coturn_server
+      - db
+  certbot:
+    image: certbot/certbot:v2.10.0
+    command: certonly --webroot --webroot-path=/webroot --email prajin.tst@gmail.com -d turn.amprajin.in -d shop.amprajin.in --agree-tos --no-eff-email --force-renewal
+    volumes:
+      - ./etc/letsencrypt:/etc/letsencrypt
+      - ./app/.well-known/acme-challenge/:/webroot
+volumes:
+  db_data:
+    driver: local
