@@ -47,4 +47,4 @@ services:
       - ./app/.well-known/acme-challenge/:/webroot
 volumes:
   db_data:
-    driver: local
+    driver: local    
