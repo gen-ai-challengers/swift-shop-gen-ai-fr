@@ -1,7 +1,6 @@
-version: '3'
 services:
   coturn_server:
-    image: coturn/coturn:4.5.2
+    image: coturn/coturn:4.6
     network_mode: host
     restart: always
     volumes:
