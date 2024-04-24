@@ -1,6 +1,7 @@
 services:
   coturn_server:
-    image: coturn/coturn:4.6
+    image: coturn/coturn:4.5.2
+    restart: always
     privileged: true
     network_mode: host
     restart: always
