@@ -4,12 +4,11 @@ services:
     restart: always
     privileged: true
     network_mode: host
-    restart: always
     volumes:
       - ./turnserver.conf:/etc/coturn/turnserver.conf
       - ./etc/letsencrypt:/etc/letsencrypt
   app:
-    image: prajinults/swift-shop-gen-ai-fr
+    image: prajinults/swift-shop-gen-ai-fr:gpu
     ports:
       - 8080:8080
     environment:
