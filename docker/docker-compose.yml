@@ -18,6 +18,13 @@ services:
       COOKIE_SECURE: 0
       COOKIE_HTTP_ONLY: 0
       THRESHOLD: 0.6
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]  
   db:
     image: google/alloydbomni
     ports:
