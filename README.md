@@ -63,6 +63,15 @@ docker tag prajinults/swift-shop-gen-ai-fr  prajinults/swift-shop-gen-ai-fr:v2.6
 docker push prajinults/swift-shop-gen-ai-fr
 docker push prajinults/swift-shop-gen-ai-fr:v2.6.0
 
+
+docker build -f Dockerfile.gpu . -t prajinults/swift-shop-gen-ai-fr:gpu
+docker tag prajinults/swift-shop-gen-ai-fr  prajinults/swift-shop-gen-ai-fr:v2.6.0-gpu
+docker push prajinults/swift-shop-gen-ai-fr:gpu
+docker push prajinults/swift-shop-gen-ai-fr:v2.6.0-gpu
+```
+
+```bash
+
 docker run -d -p 8080:8080 prajinults/swift-shop-gen-ai-fr
 
 ```

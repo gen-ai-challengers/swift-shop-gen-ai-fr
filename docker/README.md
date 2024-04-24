@@ -5,10 +5,21 @@
 ### create ssl certificate
 
 ```bash
+docker compose down
+```
 
-sudo certbot certonly --standalone --preferred-challenges http \
-    --deploy-hook "systemctl restart coturn" \
-    -d turn.genai-vm.amprajin.in
+```bash
+docker run --rm  \
+  --network host\
+  -v $(pwd)/etc/letsencrypt:/etc/letsencrypt \
+  certbot/certbot:v2.10.0 \
+  -it \
+  certonly --standalone --preferred-challenges http \
+  --email prajin.ults@gmail.com \
+  -d turn.genai.amprajin.in -d shop.genai.amprajin.in\
+  --agree-tos --no-eff-email --force-renewal -v \
+  && sudo chmod -R 777 ./etc/letsencrypt
+
 ```
 
 ### config
