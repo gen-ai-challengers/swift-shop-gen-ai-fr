@@ -41,10 +41,9 @@ services:
       - db
   certbot:
     image: certbot/certbot:v2.10.0
-    command: certonly --webroot --webroot-path=/webroot --email prajin.ults@gmail.com -d app.genai.amprajin.in --agree-tos --no-eff-email --force-renewal -v
+    command: certonly --standalone --preferred-challenges http --email prajin.ults@gmail.com -d app.genai.amprajin.in --agree-tos --no-eff-email --force-renewal -v
     volumes:
       - ./etc/letsencrypt:/etc/letsencrypt
-      - ./app/.well-known/acme-challenge/:/webroot
 volumes:
   db_data:
     driver: local    
