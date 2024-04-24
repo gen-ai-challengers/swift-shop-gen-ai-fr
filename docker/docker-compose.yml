@@ -5,6 +5,7 @@ services:
     restart: always
     volumes:
       - ./turnserver.conf:/etc/coturn/turnserver.conf
+      - ./etc/letsencrypt:/etc/letsencrypt
   app:
     image: prajinults/swift-shop-gen-ai-fr
     ports:
