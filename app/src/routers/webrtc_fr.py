@@ -38,6 +38,9 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         if self.dc is None:
             self.dc = self.pc.createDataChannel("events")
+            self.dc.send("event: datachannel created")
+        else:
+            self.dc.send("event: frame recived")
 
 
         frame = await self.track.recv()
