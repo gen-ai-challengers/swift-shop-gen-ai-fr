@@ -16,10 +16,22 @@ docker run --rm  \
   -it \
   certonly --standalone --preferred-challenges http \
   --email prajin.ults@gmail.com \
-  -d turn.genai.amprajin.in -d shop.genai.amprajin.in\
+  -d turn.genai.amprajin.in \
   --agree-tos --no-eff-email --force-renewal -v \
   && sudo chmod -R 777 ./etc/letsencrypt
 
+
+```bash
+docker run --rm  \
+  --network host\
+  -v $(pwd)/etc/letsencrypt:/etc/letsencrypt \
+  certbot/certbot:v2.10.0 \
+  -it \
+  certonly --standalone --preferred-challenges http \
+  --email prajin.ults@gmail.com \
+  -d shop.genai.amprajin.in\
+  --agree-tos --no-eff-email --force-renewal -v \
+  && sudo chmod -R 777 ./etc/letsencrypt
 ```
 
 ### config

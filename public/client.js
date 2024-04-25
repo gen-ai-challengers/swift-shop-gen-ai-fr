@@ -9,7 +9,9 @@ var pc = null;
 
 // data channel
 var dc = null,
-  dcInterval = null;
+dc2 = null,
+  dcInterval = null,
+  dcInterval2 = null;
   var startTime;
 
 function createPeerConnection() {
@@ -99,6 +101,31 @@ function createPeerConnection() {
       document.getElementById("video").srcObject = evt.streams[0];
     else document.getElementById("audio").srcObject = evt.streams[0];
   });
+  pc.addEventListener("datachannel", (evt) => {
+    console.log("Got DataChannel:", evt.channel,new Date().getTime() - startTime);
+    dc2 = evt.channel;
+    dc2.addEventListener("close", () => {
+      clearInterval(dcInterval2);
+      dataChannelLog.textContent += "- close\n";
+    });
+    dc2.addEventListener("open", () => {
+      console.log("DataChannel opened", new Date().getTime() - startTime);
+      dataChannelLog.textContent += "- open\n";
+      dcInterval2 = setInterval(() => {
+        var message = "ping data 2";
+        dataChannelLog.textContent += "> " + message + "\n";
+        dc2.send(message);
+      }, 10000);
+    });
+    dc2.addEventListener("message", (evt) => {
+      console.log("Got DataChannel message:", evt.data,new Date().getTime() - startTime);
+      dataChannelLog.textContent += "< " + evt.data + "\n";
+      if (evt.data.trim() === "stop") {
+        dataChannelLog.textContent += "stop \n";
+        stop()
+      }
+    });
+  });
 
   return pc;
 }
@@ -173,11 +200,15 @@ function negotiate() {
 
       document.getElementById("offer-sdp").textContent = offer.sdp;
       console.log("2 Sending offer to server", new Date().getTime() - startTime);
-      return fetch("/api/offer-fr/", {
+      const action = document.getElementById("video-transform").value
+      console.log("action",action);
+      const url = action=='face_recognition'?"/api/offer-fr/":"/api/v1/users/me/add-face-offer/";
+      console.log("url",url);
+      return fetch(url, {
         body: JSON.stringify({
           sdp: offer.sdp,
           type: offer.type,
-          action: document.getElementById("video-transform").value,
+          action: action,
         }),
         headers: {
           "Content-Type": "application/json",
@@ -237,7 +268,7 @@ function start() {
         var message = "ping " + current_stamp();
         dataChannelLog.textContent += "> " + message + "\n";
         dc.send(message);
-      }, 1000);
+      }, 10000);
     });
     dc.addEventListener("message", (evt) => {
       dataChannelLog.textContent += "< " + evt.data + "\n";

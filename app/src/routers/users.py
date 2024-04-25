@@ -46,7 +46,9 @@ def read_user(user_id: int, request: Request):
 
 @router.post("/users/me/add-face-offer/", response_model=dict, dependencies=[Depends(validate_access_token)])
 async def add_face_offer(offer_request: schemas.FaceWebRtcOffer, request: Request):
-    return offer(offer_request, request)
+    logging.warning("Add face offer")
+    logging.warning(f"User ID in add face: {request.state.user_id}")
+    return await offer(offer_request, request)
 
 @router.post("/users/me/add-face/", response_model=dict, dependencies=[Depends(validate_access_token)])
 async def add_face(face: schemas.FaceFile, request: Request):
