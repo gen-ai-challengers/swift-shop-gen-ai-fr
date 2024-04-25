@@ -39,10 +39,10 @@ async def get_user_by_face(db: Session, face: Union[bytes, str, VideoFrame]):
 
     face_encodings = embed_single_face(face)
     user = db.scalars(select(models.Face).order_by(
-        models.Face.embedding.l2_distance(face_encodings)).limit(1)).first()
-    logging.warning(f"User: {user.user_id}")
+        models.Face.embedding.l2_distance(face_encodings)).limit(1)).first()    
     if user is None:
         raise HTTPException(status_code=404, detail="Face not recognized")
+    logging.warning(f"User: {user.user_id}")
     logging.warning("Checking threshold")
     distance = check_matching([user.embedding], face_encodings)
     logging.warning(f"Distance: {distance}")

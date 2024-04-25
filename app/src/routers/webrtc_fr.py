@@ -2,6 +2,7 @@ import asyncio
 import cv2
 import logging
 import random
+import traceback
 
 import uuid
 from av import VideoFrame
@@ -31,36 +32,24 @@ class VideoTransformTrack(MediaStreamTrack):
         self.dc: RTCDataChannel = None
         self.frame_count = 0
         self.face_count = 0
+        self.error_count = 0
         
 
     async def recv(self):
         if self.dc is None:
             self.dc = self.pc.createDataChannel("events")
-        if self.request.state._state.get("identified"):
-            logging.warning("########## send_identified start ##########")
-            logging.warning(self.dc.readyState)            
-            self.dc.send("identified")
-            self.dc.send("token:" + self.request.state.token)
-            self.dc.send("user:" + self.request.state.user_name)
-        if self.request.state._state.get("stop_stream"):
-            logging.warning("************* send_error start ************")
-            logging.warning(self.dc.readyState)             
-            logging.warning("send_error loop")
-            logging.warning(self.request.state._state.get("stop_reson"))
-            logging.warning("error")
-            self.dc.send("stop")
-            self.dc.send("error:" + self.request.state._state.get("stop_reson"))
-            self.dc.close()
-            self.track.stop()
-            await self.pc.close()
+
+
         frame = await self.track.recv()
         self.frame_count += 1
         if self.transform == "face_recognition":
-            if self.frame_count % 5 == 0:    
+            if self.frame_count % 10 == 0:    
                 try:
-                    user: models.User = await service.get_user_by_face(self.db, frame)                    
+                    user: models.User = await service.get_user_by_face(self.db, frame)
+                    if self.error_count >0:
+                        self.error_count -= 1                   
                     logging.warning(f"User found: {user.name}")
-                    if self.request.state._state.get("user_id") == user.id:
+                    if self.request.state.user_id == user.id:
                         self.face_count+=1
                     else:
                         self.face_count = 0
@@ -70,15 +59,21 @@ class VideoTransformTrack(MediaStreamTrack):
                     print(user)
                     logging.warning(f"User found: {user.name}")
                     if self.face_count > 10:
-                        self.request.state.identified = True
-                        self.request.state.token = create_access_token(user)
-                        self.request.state.stop_stream = True
-                        self.request.state.stop_reson = "User identified"
+                        self.dc.send("identified")
+                        self.dc.send("token:" + create_access_token(user))
+                        self.dc.send("user:" + self.request.state.user_name)
                 except Exception as e:
-                    self.request.state.stop_stream = True
-                    self.request.state.stop_reson = "User recognition error: "+str(e)
-                    logging.error(e)
-                    logging.warning(f"User not found: {e}")
+                    
+                    logging.error(f"User recognition exception: {e}")
+                    traceback.print_tb(e.__traceback__)
+                    self.error_count += 1
+                    if self.error_count > 10:
+                        self.dc.send("stop")
+                        self.dc.send("error:User recognition error: "+str(e))
+                        self.dc.close()
+                        self.track.stop()
+                        await self.pc.close()
+
             img = frame.to_ndarray(format="bgr24")
             cv2.putText(
                     img,
@@ -100,8 +95,11 @@ class VideoTransformTrack(MediaStreamTrack):
             try:
                 logging.warning(f"face_addition User ID: {self.request.state.user_id}")
                 if self.request.state.user_id is None:
-                    self.request.state.stop_stream = True
-                    self.request.state.stop_reson = "User not authenticated"
+                    self.dc.send("stop")
+                    self.dc.send("User not authenticated")
+                    self.dc.close()
+                    self.track.stop()
+                    await self.pc.close()  
                     logging.warning("User not authenticated")
                     img = frame.to_ndarray(format="bgr24")
                     cv2.putText(
@@ -115,12 +113,15 @@ class VideoTransformTrack(MediaStreamTrack):
                         cv2.LINE_AA,
                     )
                 else:
-                    if self.frame_count % 5 == 0:    
+                    if self.frame_count % 10 == 0:    
                         await service.add_user_face(self.db, frame, user_id=self.request.state.user_id)
                         self.face_count += 1
                     if self.face_count > 10:
-                        self.request.state.stop_stream = True
-                        self.request.state.stop_reson = "User face addedd"  
+                        self.dc.send("stop")
+                        self.dc.send("User face addedd")
+                        self.dc.close()
+                        self.track.stop()
+                        await self.pc.close()  
                     img = frame.to_ndarray(format="bgr24")
                     cv2.putText(
                         img,
@@ -133,7 +134,8 @@ class VideoTransformTrack(MediaStreamTrack):
                         cv2.LINE_AA,
                     )
             except Exception as e:
-                logging.warning(f"adding failed: {e}")
+                logging.error(f"adding failed: {e}")
+                traceback.print_tb(e.__traceback__)
                 img = frame.to_ndarray(format="bgr24")
                 cv2.putText(
                     img,
@@ -145,8 +147,11 @@ class VideoTransformTrack(MediaStreamTrack):
                     2,
                     cv2.LINE_AA,
                 )
-                self.request.state.stop_stream = True
-                self.request.state.stop_reson = "User adding error: "+str(e)
+                self.dc.send("stop")
+                self.dc.send("error:failed to add face: "+str(e))
+                self.dc.close()
+                self.track.stop()
+                await self.pc.close()
 
 
             # rebuild a VideoFrame, preserving timing information
@@ -162,6 +167,8 @@ class VideoTransformTrack(MediaStreamTrack):
 async def offer(offer_request: schemas.FaceWebRtcOffer, request: Request):
     if request.state._state.get("user_id") is not None:
         logging.warning(f"User ID in offer-fr: {request.state.user_id}")
+    else:
+        request.state.user_id = None
     app = request.app
     pcs: set = app.pcs
     relay: MediaRelay = app.relay
