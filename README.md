@@ -68,6 +68,7 @@ docker build -f Dockerfile.gpu . -t prajinults/swift-shop-gen-ai-fr:latest-gpu
 docker tag prajinults/swift-shop-gen-ai-fr:latest-gpu  prajinults/swift-shop-gen-ai-fr:v2.6.0-gpu
 docker push prajinults/swift-shop-gen-ai-fr:latest-gpu
 docker push prajinults/swift-shop-gen-ai-fr:v2.6.0-gpu
+
 ```
 
 ```bash
