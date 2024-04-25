@@ -26,6 +26,7 @@ COOKIE_HTTP_ONLY = os.getenv("COOKIE_HTTP_ONLY", 1) == 1
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", 1) == 1
 ALGORITHM = "HS256"
 ADMIN_USER_ID = os.getenv("ADMIN_USER_ID", 1)
+DOMAIN = os.getenv("DOMAIN", "genai.amprajin.in")
 
 
 MODEL_NAME = os.getenv("MODEL_NAME", "GhostFaceNet")
@@ -70,6 +71,7 @@ def validate_permissions(request: Request=None):
 def set_cookie(response: Response,db_user: models.User):
     token = create_access_token(db_user)
     response.set_cookie(key="__session", value=token, httponly=COOKIE_HTTP_ONLY, secure=COOKIE_SECURE)
+    response.set_cookie(key="__session", value=token, httponly=COOKIE_HTTP_ONLY, secure=COOKIE_SECURE, domain=DOMAIN)
     response.set_cookie(key="x_user_id", value=str(db_user.id))
     response.set_cookie(key="x_phone", value=db_user.phone)
     response.set_cookie(key="x_is_active", value=str(db_user.is_active))
