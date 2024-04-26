@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import uuid
+import asyncio
 from fastapi import APIRouter, Request
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, RTCDataChannel
 from aiortc.contrib.media import MediaRelay
@@ -69,7 +70,7 @@ class VideoTransformTrack(MediaStreamTrack):
 
                     print(user)
                     logging.warning(f"User found: {user.name}")
-                    if self.face_count > 10:
+                    if self.face_count > 3:
                         self.send_message("identified")
                         self.send_message("token:" + create_access_token(user))
                         self.send_message(
@@ -93,10 +94,10 @@ class VideoTransformTrack(MediaStreamTrack):
                     await self.send_stop("error:User not authenticated")
                     logging.warning("User not authenticated")
                 else:
-                    if self.frame_count % 10 == 0:
-                        await service.add_user_face(self.db, frame, user_id=self.request.state.user_id)
+                    if self.frame_count % 2 == 0:
+                        asyncio.create_task(service.add_user_face(self.db, frame, user_id=self.request.state.user_id))
                         self.face_count += 1
-                    if self.face_count > 10:
+                    if self.face_count > 3:
                         await self.send_stop("User face addedd")
             except Exception as e:
                 logging.error(f"adding failed: {e}")
