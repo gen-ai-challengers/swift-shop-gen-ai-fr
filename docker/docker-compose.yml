@@ -9,6 +9,7 @@ services:
       - ./etc/letsencrypt:/etc/letsencrypt
   app:
     image: prajinults/swift-shop-gen-ai-fr:latest-gpu
+    restart: always
     ports:
       - 8080:8080
     environment:
@@ -29,6 +30,7 @@ services:
               capabilities: [gpu]  
   db:
     image: google/alloydbomni
+    restart: always
     ports:
       - 5432:5432
     environment:
@@ -37,6 +39,7 @@ services:
       - db_data:/var/lib/postgresql/data
   nginx:
     image: bitnami/nginx:1.25.5
+    restart: always
     ports:
       - 80:8080
       - 443:8443
